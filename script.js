@@ -5,7 +5,7 @@ function getMenu(ui) {
     .addToUi();
   } else {
     ui.createMenu('Optimizely Menu')
-    .addItem('Get Projects', 'getProject')
+    .addItem('Get Projects', 'getProjects')
     .addItem('Print Running experiments', 'printRunningExperimentResults')
     .addItem('Get Impressions', 'getImpressions')
     .addToUi();
@@ -31,8 +31,8 @@ function getOptiService() {
      * NEED TO CHANGE 
      * Set the client ID and secret, from the Optimizely Account Settings Page.
      */
-    .setClientId('14086940272')
-    .setClientSecret('ysO5KOCnlTXrGJknmbI_vHhABo2i8Qe0OHg9hAsgxt4')
+    .setClientId('21007060557')
+    .setClientSecret('pxHi0N9_9lMcF2Y7izoyM8uB-4zyhvFXSfuLauN3M3s')
 
     // Set the name of the callback function in the script referenced
     // above that should be invoked to complete the OAuth flow.
@@ -56,9 +56,8 @@ function getOptiService() {
 
 function showSidebar() {
   var ui = SpreadsheetApp.getUi();
-  var optiServices = getOptiService();
-  if (!optiServices.hasAccess()) {
-    var authorizationUrl = optiServices.getAuthorizationUrl();
+  if (!getOptiService().hasAccess()) {
+    var authorizationUrl = getOptiService().getAuthorizationUrl();
     var template = HtmlService.createTemplate(
       '<a href="<?= authorizationUrl ?>" target="_blank">Authorize</a>. ' +
       'Reopen the sidebar when the authorization is complete.');
@@ -66,113 +65,127 @@ function showSidebar() {
     var page = template.evaluate();
     SpreadsheetApp.getUi().showSidebar(page);
   } else {
-    getFullMenu(ui);
+    getMenu(ui);
   }
 }
 
 function authCallback(request) {
   var ui = SpreadsheetApp.getUi();
-  var optiServices = getOptiService();
-  var isAuthorized = optiServices.handleCallback(request);
+  var isAuthorized = getOptiService().handleCallback(request);
   if (isAuthorized) {
-    getAuthMenu(ui);
+    getMenu(ui);
     return HtmlService.createHtmlOutput('Success! You can close this tab.');
   } else {
-    getFullMenu(ui);
-    return HtmlService.createHtmlOutput('Denied. You can close this tab');
+    getMenu(ui);
+    return HtmlService.createHtmlOutput('Access Denied. Double-check that you have provided valid credentials.');
   }
 }
 
-function getProject() {
-  var optiServices = getOptiService();
+// function getProjects() {
+//   var url = 'https://api.optimizely.com/v2/projects';
+//   var response = UrlFetchApp.fetch(url, {
+//     headers: {
+//       'authorization': 'Bearer ' + getOptiService().getAccessToken(),
+//     }
+//   });
 
-  var url = 'https://api.optimizely.com/v2/projects';
-  var response = UrlFetchApp.fetch(url, {
-    headers: {
-      'authorization': 'Bearer ' + optiServices.getAccessToken(),
-    }
-  });
+//   var data = JSON.parse(response);
+//   var project = [];
+//   data.forEach(function (elem) {
+//     project.push([elem["name"], elem["id"]]);
+//   });
 
-  var data = JSON.parse(response);
-  var project = [];
-  data.forEach(function (elem) {
-    project.push([elem["name"], elem["id"]]);
-  });
+//   Logger.log(project);
 
-  Logger.log(project);
-
-  var template = HtmlService.createTemplate(project);
-  var page = template.evaluate();
-  SpreadsheetApp.getUi().showSidebar(page);
-  Logger.log('get project: ' + response);
-}
-
-function sevenDaysAgo() {
-  return new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() - 6);
-}
+//   var template = HtmlService.createTemplate(project);
+//   var page = template.evaluate();
+//   SpreadsheetApp.getUi().showSidebar(page);
+//   Logger.log('get project: ' + response);
+// }
 
 function getImpressions() {
   // Get Account ID:
-  var acountID = SpreadsheetApp.getActiveSheet().getRange(2, 2).getValue();
+  var acountID = SpreadsheetApp.getActive().getSheetByName('Configuration').getRange(4, 2).getValue();
   Logger.log(acountID);
   // Get Weekly Impression Limit:
-  var limit = SpreadsheetApp.getActiveSheet().getRange(2, 4).getValue();
+  var limit = SpreadsheetApp.getActive().getSheetByName('Configuration').getRange(3, 2).getValue();
   Logger.log(limit);
 
-  // Get the 7 day window dates 
-  todaytemp = new Date();
-  today = Utilities.formatDate(todaytemp, "GMT", "yyyy-MM-dd")
-  Logger.log(today)
-  var tempyesterday = sevenDaysAgo();
-  yesterday = Utilities.formatDate(tempyesterday, "GMT", "yyyy-MM-dd")
-  Logger.log(yesterday)
+  var endDateRaw = new Date();
+  var endDate = Utilities.formatDate(endDateRaw, "GMT", "yyyy-MM-dd")
+  // Read the date window from the sheet. If no value provided, use the default 7-day window.
+  var numberOfDays = SpreadsheetApp.getActive().getSheetByName('Configuration').getRange(2, 2).getValue() - 1 || 6;
+  var startDateRaw = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() - numberOfDays);
+  var startDate = Utilities.formatDate(startDateRaw, "GMT", "yyyy-MM-dd")
+  
+  // Read (old) impression numbers from the sheet
+  var numberOfRows = SpreadsheetApp.getActive().getSheetByName('Results').getLastRow() - 2;
+  // var lastRow = SpreadsheetApp.getActive().getSheetByName('Results').getLastRow();
+  var oldImpressions = SpreadsheetApp.getActive().getSheetByName('Results').getRange(2, 6, numberOfRows).getValues();
+  Logger.log('OLD IMPRESSIONS');
+  Logger.log(oldImpressions);
+  
   // Call the billing api
-  var optiServices = getOptiService();
-  var url = 'https://api.optimizely.com/v2/billing/usage/' + acountID + '?usage_date_from=' + yesterday + '&usage_date_to=' + today;
+  var url = 'https://api.optimizely.com/v2/billing/usage/' + acountID + '?usage_date_from=' + startDate + '&usage_date_to=' + endDate;
   var response = UrlFetchApp.fetch(url, {
     headers: {
-      'authorization': 'Bearer ' + optiServices.getAccessToken(),
+      'authorization': 'Bearer ' + getOptiService().getAccessToken(),
     }
   });
   var data = JSON.parse(response);
   //Object containing metrics
   var experiments = [];
   var experimentsAboveLimit = [];
+  var newImpressions = [];
+  var project_name
+  var experiment_id
+  var experiment_name
+  var experiment_status
+  var platform
+  var impression_count
 
   data.forEach(function (elem) {
     experiments.push(elem);
   });
 
   for (i in experiments) {
-    var project_name = experiments[i].project_name;
-    var experiment_id = experiments[i].experiment_id;
-    var experiment_name = experiments[i].experiment_name;
-    var experiment_status = experiments[i].experiment_status;
-    var platform = experiments[i].platform;
-    var impression_count = experiments[i].impression_count;
+    // TODO move this into the push method (to save 12 rows)
+    project_name = experiments[i].project_name;
+    experiment_id = experiments[i].experiment_id;
+    experiment_name = experiments[i].experiment_name;
+    experiment_status = experiments[i].experiment_status;
+    platform = experiments[i].platform;
+    impression_count = experiments[i].impression_count;
+    
+    newImpressions.push(experiments[i].impression_count);
 
     if (impression_count > limit) {
       experimentsAboveLimit.push([project_name, experiment_id, experiment_name, experiment_status, platform, impression_count])
     }
     //Append Row
-    SpreadsheetApp.getActiveSheet().appendRow([project_name, experiment_id, experiment_name, experiment_status, platform, impression_count]);
+    SpreadsheetApp.getActive().getSheetByName('Results').appendRow([project_name, experiment_id, experiment_name, experiment_status, platform, impression_count]);
   }
+
+  Logger.log('NEW IMPRESSIONS');
+  Logger.log(newImpressions);
+
+  Logger.log(oldImpressions - newImpressions);
 
   if (experimentsAboveLimit.length > 0) {
     notifyUser(experimentsAboveLimit);
   }
 }
 
+// TODO This one needs a bit of work
 function notifyUser(arrayOfExperimentsAboveLimit) {
   Logger.log(arrayOfExperimentsAboveLimit);
 }
 
-function clearSheet() {
-  var sheet = SpreadsheetApp.getActiveSheet()
-  var end = sheet.getLastRow() - 1;//Number of last row with content
-  //blank rows after last row with content will not be deleted
-  sheet.deleteRows(3, end);
-}
+// function clearSheet(sheetName, rowStart) {
+//   var sheet = SpreadsheetApp.getActive().getSheetByName(sheetName);
+//   var rowEnd = sheet.getLastRow() - 1;//Number of last row with content
+//   sheet.deleteRows(rowStart, rowEnd);
+// }
 
 function getResults(exp_id) {
   var optiServices = getOptiService();
