@@ -21,7 +21,7 @@ function getOptiService() {
   // Create a new service with the given name. The name will be used when
   // persisting the authorized token, so ensure it is unique within the
   // scope of the property store.
-  return OAuth2.createService('opti')
+  return OAuth2.createService('Optimizely Impression Notifications')
 
     // Set the endpoint URLs for Optimizely 2.0.
     .setAuthorizationBaseUrl('https://app.optimizely.com/oauth2/authorize')
@@ -106,47 +106,43 @@ function authCallback(request) {
 function getImpressions() {
   // Get Account ID:
   var acountID = SpreadsheetApp.getActive().getSheetByName('Configuration').getRange(4, 2).getValue();
-  Logger.log(acountID);
   // Get Weekly Impression Limit:
-  var limit = SpreadsheetApp.getActive().getSheetByName('Configuration').getRange(3, 2).getValue();
-  Logger.log(limit);
+  var impressionLimit = SpreadsheetApp.getActive().getSheetByName('Configuration').getRange(3, 2).getValue();
 
-  var endDateRaw = new Date();
-  var endDate = Utilities.formatDate(endDateRaw, "GMT", "yyyy-MM-dd")
-  // Read the date window from the sheet. If no value provided, use the default 7-day window.
-  var numberOfDays = SpreadsheetApp.getActive().getSheetByName('Configuration').getRange(2, 2).getValue() - 1 || 6;
-  var startDateRaw = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() - numberOfDays);
-  var startDate = Utilities.formatDate(startDateRaw, "GMT", "yyyy-MM-dd")
+  // Today's date
+  var endDate = Utilities.formatDate(new Date(), "GMT", "yyyy-MM-dd")
+  // Start date of the query. 
+  // Can be adjusted in the 'Configuration' tab. Using 2 days by default (yesterday's data becomes available ~1pm PST/9pm GMT).
+  var daysAgo = parseInt(SpreadsheetApp.getActive().getSheetByName('Configuration').getRange(2, 2).getValue() || 2);
+  var startDateRaw = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() - daysAgo, new Date().getHours()); // NOTE: The time will be in local timezone
+  var startDate = Utilities.formatDate(startDateRaw, "GMT", "yyyy-MM-dd"); // NOTE: GMT is used here. Mind that the timezone offset can put you into a different date.
   
   // Read (old) impression numbers from the sheet
-  var numberOfRows = SpreadsheetApp.getActive().getSheetByName('Results').getLastRow() - 2;
+  // var numberOfRows = SpreadsheetApp.getActive().getSheetByName('Results').getLastRow() - 2;
   // var lastRow = SpreadsheetApp.getActive().getSheetByName('Results').getLastRow();
-  var oldImpressions = SpreadsheetApp.getActive().getSheetByName('Results').getRange(2, 6, numberOfRows).getValues();
-  Logger.log('OLD IMPRESSIONS');
-  Logger.log(oldImpressions);
+  // var oldImpressions = SpreadsheetApp.getActive().getSheetByName('Results').getRange(3, 6, numberOfRows).getValues();
   
-  // Call the billing api
+  // Read the impressions details for all experiments
+  // TODO: handle pagination
   var url = 'https://api.optimizely.com/v2/billing/usage/' + acountID + '?usage_date_from=' + startDate + '&usage_date_to=' + endDate;
+  Logger.log(url);
   var response = UrlFetchApp.fetch(url, {
     headers: {
       'authorization': 'Bearer ' + getOptiService().getAccessToken(),
     }
   });
   var data = JSON.parse(response);
-  //Object containing metrics
+  // Object containing metrics
   var experiments = [];
   var experimentsAboveLimit = [];
-  var newImpressions = [];
-  var project_name
-  var experiment_id
-  var experiment_name
-  var experiment_status
-  var platform
-  var impression_count
+  // var newImpressions = [];
+  var project_name, experiment_id, experiment_name, experiment_status, platform, impression_count
 
   data.forEach(function (elem) {
     experiments.push(elem);
   });
+
+  Logger.log(experiments);
 
   for (i in experiments) {
     // TODO move this into the push method (to save 12 rows)
@@ -157,23 +153,46 @@ function getImpressions() {
     platform = experiments[i].platform;
     impression_count = experiments[i].impression_count;
     
-    newImpressions.push(experiments[i].impression_count);
+    // newImpressions.push(impression_count);
 
-    if (impression_count > limit) {
+    if (impression_count > impressionLimit) {
       experimentsAboveLimit.push([project_name, experiment_id, experiment_name, experiment_status, platform, impression_count])
     }
     //Append Row
     SpreadsheetApp.getActive().getSheetByName('Results').appendRow([project_name, experiment_id, experiment_name, experiment_status, platform, impression_count]);
   }
 
-  Logger.log('NEW IMPRESSIONS');
-  Logger.log(newImpressions);
+  // Logger.log('NEW IMPRESSIONS');
+  // Logger.log(newImpressions);
 
-  Logger.log(oldImpressions - newImpressions);
+  // Logger.log(oldImpressions - newImpressions);
+
+  // Check last impressions usage update date vs current date
+  getImpressionSummary();
 
   if (experimentsAboveLimit.length > 0) {
-    notifyUser(experimentsAboveLimit);
+    Logger.log(experimentsAboveLimit);
+    var lastRow = SpreadsheetApp.getActive().getSheetByName('Results').getLastRow();
+    SpreadsheetApp.getActive().getSheetByName('Results')
+      .getRange(lastRow + 1, 1, experimentsAboveLimit.length, experimentsAboveLimit[0].length)
+      .setValues(experimentsAboveLimit);
+    // notifyUser(experimentsAboveLimit);
   }
+}
+
+// Check if the data is not stale
+function getImpressionSummary() {
+  var acountID = SpreadsheetApp.getActive().getSheetByName('Configuration').getRange(4, 2).getValue();
+  var url = 'https://api.optimizely.com/v2/billing/usage/' + acountID + '/summary';
+  var response = UrlFetchApp.fetch(url, {
+    headers: {
+      'authorization': 'Bearer ' + getOptiService().getAccessToken(),
+    }
+  });
+  var data = JSON.parse(response);
+  var executionDate = Utilities.formatDate(new Date(), "GMT", "yyyy-MM-dd");
+  var lastUpdateDate = data.last_update_date;
+  SpreadsheetApp.getActive().getSheetByName('Log').appendRow([executionDate, lastUpdateDate]);
 }
 
 // TODO This one needs a bit of work
@@ -225,7 +244,8 @@ function getRunningExperiments() {
   var optiServices = getOptiService();
   var complete = false;
   var page = 1;
-  var projectId = SpreadsheetApp.getActiveSheet().getRange(2, 2).getValue();
+  // var projectId = SpreadsheetApp.getActiveSheet().getRange(2, 2).getValue();
+  var projectId = "7848692098"
   Logger.log("Project ID: " + projectId);
   var runningExperiments = [];
 
