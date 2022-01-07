@@ -4,13 +4,13 @@ A connector between Optimizely and Google Spreadsheets through which you can mon
 
 ## Instructions for use
 
-1. Create a copy of the Spreadsheet template located here (ADD LINK). In the copied document, head to the *Configuration* tab and enter the Optimizely **Account ID**.
+1. Create a copy of the Spreadsheet template located [here](https://docs.google.com/spreadsheets/d/1g97TBPWWYl0kMm-UjTfvNqNnJjm7IS_S6Vm-dMDUuO0/edit?usp=sharing). In the copied document, head to the *Configuration* tab and enter the Optimizely **Account ID**.
 2. In the main navigation of the copied document, select *Extensions > Apps Script* to open the Apps Script in a new tab. Head to the (Apps Script) *Project Settings* and copy the **Script ID**.
 2. In Optimizely, head to *Account Settings > Registered Apps* and Register a new application.
 3. Select the application name & enter the redirect URI. The Redirect URI should be in the format of 'https://script.google.com/macros/d/SCRIPT_ID/usercallback' where you replace the 'SCRIPT_ID' with the value retrieved in Step 2.
 4. Set the Client Type as *Confidential*.
 5. Upon successful registration, the app will get assigned a **Client ID** and **Client Secret**. You will need these in the next steps to modify the provided Apps Script template.
-6. Back in the tab with the Apps Script open, select the *Editor* tab and open the file called TBD. In here, edit lines 33 & 34 by providing the Client ID and Client Secret of the Optimizely App you've just created. Save you changes.
+6. Back in the tab with the Apps Script, select the *Editor* tab and open the file called *oauth.gs*. In here, edit lines 31 & 32 inside the *getOptiService* function by providing the Client ID and Client Secret of the Optimizely App you've just created. Save you changes.
 6. Head back to the tab with the spreadsheet open and authenticate the application: *Optimizely Menu > Authorize*.
 7. Upon the successfull authentication, you should now see new options under the *Optimizely Menu* tab: 
     1. **List Experiments** will list experiments that have consumed more impressions than is the threshold set in the *Configuration* tab (default is 1000).

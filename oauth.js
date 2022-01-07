@@ -7,7 +7,7 @@ function getMenu(ui) {
     .addToUi();
   } else {
     ui.createMenu('Optimizely Menu')
-    .addItem('List Experiments', 'getImpressions')
+    .addItem('List Experiments', 'listExperimentImpressions')
     .addItem('Log Out', 'logout')
     .addToUi();
   }
@@ -28,8 +28,8 @@ function getOptiService() {
      * NEED TO CHANGE 
      * Set the client ID and secret, from the Optimizely Account Settings Page.
      */
-    .setClientId('21007060557')
-    .setClientSecret('pxHi0N9_9lMcF2Y7izoyM8uB-4zyhvFXSfuLauN3M3s')
+    .setClientId('')
+    .setClientSecret('')
 
     // Set the name of the callback function in the script referenced
     // above that should be invoked to complete the OAuth flow.
