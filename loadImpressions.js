@@ -1,7 +1,9 @@
 // Read configuration details from the spreadsheet
-var acountId = SpreadsheetApp.getActive().getSheetByName('Configuration').getRange("B5").getValue();
-var impressionLimit = SpreadsheetApp.getActive().getSheetByName('Configuration').getRange("B4").getValue() || 1000;
-var dateRange = parseInt(SpreadsheetApp.getActive().getSheetByName('Configuration').getRange("B3").getValue() || 2);
+var acountId = SpreadsheetApp.getActive().getSheetByName('Configuration').getRange("B2").getValue();
+var impressionThreshold = SpreadsheetApp.getActive().getSheetByName('Configuration').getRange("B3").getValue() || 1000;
+var dateRange = parseInt(SpreadsheetApp.getActive().getSheetByName('Configuration').getRange("B4").getValue() || 2);
+var notificationsEnabled = SpreadsheetApp.getActive().getSheetByName('Configuration').getRange("B6").getValue();
+
 
 // Check if the data is not stale
 function getImpressionSummary() {
@@ -49,7 +51,7 @@ function listExperimentImpressions() {
     });
 
     for (i in experimentsOnPage) {
-      if (experimentsOnPage[i].impression_count > impressionLimit) {
+      if (experimentsOnPage[i].impression_count > impressionThreshold) {
         experimentsAboveLimit.push([experimentsOnPage[i].project_name, experimentsOnPage[i].experiment_id, experimentsOnPage[i].experiment_name, experimentsOnPage[i].experiment_status, experimentsOnPage[i].platform, experimentsOnPage[i].impression_count]);
       }
     }
@@ -58,7 +60,7 @@ function listExperimentImpressions() {
       complete = true;
     }
   }
-  
+
   // Print the date range of the executed query
   SpreadsheetApp.getActive().getSheetByName('Impressions')
     .getRange("A2")
@@ -72,6 +74,11 @@ function listExperimentImpressions() {
     SpreadsheetApp.getActive().getSheetByName('Impressions')
       .getRange(4, 1, experimentsAboveLimit.length, experimentsAboveLimit[0].length)
       .setValues(experimentsAboveLimit);
+
+    // Send notification email
+    if (notificationsEnabled === 'Y') {
+      sendEmailNotification();
+    }
   }
 
   // Check last impressions usage update date vs. the current date

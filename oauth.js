@@ -3,7 +3,7 @@
 function getMenu(ui) {
   if (!getOptiService().hasAccess()) {
     ui.createMenu('Optimizely Menu')
-    .addItem('Authorize', 'showSidebar')
+    .addItem('Authorize', 'openAuthScreen')
     .addToUi();
   } else {
     ui.createMenu('Optimizely Menu')
@@ -39,20 +39,29 @@ function getOptiService() {
     .setParam('response_type', 'code')
 }
 
-// Apps Script UI's are not allowed to redirect the user's window to a new URL, 
-// so you'll need to present the authorization URL as a link for the user to click.
-function showSidebar() {
+function openAuthScreen(){
   var ui = SpreadsheetApp.getUi();
   if (!getOptiService().hasAccess()) {
     var authorizationUrl = getOptiService().getAuthorizationUrl();
-    var template = HtmlService.createTemplate(
-      '<a href="<?= authorizationUrl ?>" target="_blank">Authorize</a>. \n' +
-      'You can close the sidebar when the authorization is complete.');
-    template.authorizationUrl = authorizationUrl;
-    var page = template.evaluate();
-    SpreadsheetApp.getUi().showSidebar(page);
+    var html = HtmlService.createHtmlOutput('<!DOCTYPE html><html><script>'
+    +'window.close = function(){window.setTimeout(function(){google.script.host.close()},9)};'
+    +'var a = document.createElement("a"); a.href="'+authorizationUrl+'"; a.target="_blank";'
+    +'if(document.createEvent){'
+    +'  var event=document.createEvent("MouseEvents");'
+    +'  if(navigator.userAgent.toLowerCase().indexOf("firefox")>-1){window.document.body.append(a)}'                          
+    +'  event.initEvent("click",true,true); a.dispatchEvent(event);'
+    +'}else{ a.click() }'
+    +'close();'
+    +'</script>'
+    // Offer URL as clickable link in case above code fails.
+    +'<body style="word-break:break-word;font-family:sans-serif;">Failed to open automatically.<br/><a href="'+authorizationUrl+'" target="_blank" onclick="window.close()">Click here to proceed to the Optimizely auth dialog</a>.</body>'
+    +'<script>google.script.host.setHeight(55);google.script.host.setWidth(410)</script>'
+    +'</html>')
+    .setWidth( 90 ).setHeight( 1 );
+    ui.showModalDialog(html, "Opening Optimizely Authorization Dialog...");
   } else {
     getMenu(ui);
+    // TODO: show a warning that Optimizely cannot connect
   }
 }
 
@@ -61,10 +70,15 @@ function authCallback(request) {
   var isAuthorized = getOptiService().handleCallback(request);
   if (isAuthorized) {
     getMenu(ui);
-    return HtmlService.createHtmlOutput('Success! You can close this tab.');
+    return HtmlService.createHtmlOutput('<!DOCTYPE html><html>'
+    +'<div style="margin: auto;">'
+    +'<h2 style="font-family: Inter,sans-serif; text-align: center;">Authorization Successful. You can close this tab.</h2>'
+    +'<button onclick="window.top.close()" style="background-color: #0037ff; border-color: #1a4bff; color: #fff; display: inline-block; vertical-align: middle; white-space: nowrap; font-family: Inter,sans-serif; cursor: pointer; line-height: 32px; border-width: 1px; border-style: solid; font-size: 13px; font-weight: 400; border-radius: 4px; height: 34px; padding: 0 15px; display: flex; margin: auto;">Close'
+    +'</button></div></html>');
   } else {
     getMenu(ui);
     return HtmlService.createHtmlOutput('Access Denied. Double-check that you have provided valid credentials. (You can close this tab)');
+    // TODO: make this a bit more presentable
   }
 }
 
