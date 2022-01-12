@@ -48,9 +48,13 @@ function listExperimentImpressions() {
       experimentsOnPage.push(elem);
     });
 
+    function createEmulationLink(id) {
+      return '=HYPERLINK("https://app.optimizely.com/s/redirect-to-emulate?input=' + id + '","' + id + '")'
+    }
+
     for (i in experimentsOnPage) {
       if (experimentsOnPage[i].impression_count > impressionThreshold) {
-        experimentsAboveLimit.push([experimentsOnPage[i].project_name, experimentsOnPage[i].experiment_id, experimentsOnPage[i].experiment_name, experimentsOnPage[i].experiment_status, experimentsOnPage[i].platform, experimentsOnPage[i].impression_count]);
+        experimentsAboveLimit.push([experimentsOnPage[i].project_name, createEmulationLink(experimentsOnPage[i].experiment_id.toString()), experimentsOnPage[i].experiment_name, experimentsOnPage[i].experiment_status, experimentsOnPage[i].platform, experimentsOnPage[i].impression_count]);
       } 
     }
     page++;

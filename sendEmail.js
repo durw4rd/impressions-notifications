@@ -17,7 +17,7 @@ function sendEmailNotification(){
   for (row = 0; row < expData.length; row++) {
     htmltable += '<tr>';
     for (col = 0; col < expData[row].length; col++) {
-      if (expData[row][col] === "" || 0) { htmltable += '<td>' + 'None' + '</td>'; }
+      if (expData[row][col] === "" || 0) { htmltable += '<td>' + 'N/A' + '</td>'; }
       else
         if (row === 0) {
           htmltable += '<th>' + expData[row][col] + '</th>';

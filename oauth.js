@@ -20,6 +20,9 @@ function onOpen() {
 
 // Using the following library: https://github.com/googleworkspace/apps-script-oauth2
 function getOptiService() {
+  var clientId = SpreadsheetApp.getActive().getSheetByName('Configuration').getRange("B9").getValue().toString();
+  var clientSecret = SpreadsheetApp.getActive().getSheetByName('Configuration').getRange("B10").getValue(); 
+
   return OAuth2.createService('OptimizelyNotifier')
     .setAuthorizationBaseUrl('https://app.optimizely.com/oauth2/authorize')
     .setTokenUrl('https://app.optimizely.com/oauth2/token')
@@ -28,8 +31,8 @@ function getOptiService() {
      * NEED TO CHANGE 
      * Set the client ID and secret, from the Optimizely Account Settings Page.
      */
-    .setClientId('')
-    .setClientSecret('')
+    .setClientId(clientId)
+    .setClientSecret(clientSecret)
 
     // Set the name of the callback function in the script referenced
     // above that should be invoked to complete the OAuth flow.
