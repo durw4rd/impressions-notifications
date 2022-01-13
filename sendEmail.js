@@ -1,16 +1,16 @@
-function sendEmailNotification(){
+var impressionThreshold = SpreadsheetApp.getActive().getSheetByName('Configuration').getRange("B3").getValue() || 1000;
+var emailAddress = SpreadsheetApp.getActive().getSheetByName('Configuration').getRange("B7").getValue();
+
+var lastRow = SpreadsheetApp.getActive().getSheetByName('Impressions').getLastRow();
+var expData = SpreadsheetApp.getActive().getSheetByName('Impressions').getRange(3, 1, lastRow - 2,  6).getValues();
+
+var endDate = Utilities.formatDate(new Date(), "GMT", "yyyy-MM-dd");
+var startDateRaw = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() - dateRange, new Date().getHours());
+var startDate = Utilities.formatDate(startDateRaw, "GMT", "yyyy-MM-dd");
+
+function emailExperimentsAboveThreshold(){
   // TODO: Handle missing email address
   // TODO: Add notification to the UI
-  var impressionThreshold = SpreadsheetApp.getActive().getSheetByName('Configuration').getRange("B3").getValue() || 1000;
-  var emailAddress = SpreadsheetApp.getActive().getSheetByName('Configuration').getRange("B7").getValue();
-
-  var lastRow = SpreadsheetApp.getActive().getSheetByName('Impressions').getLastRow();
-  var expData = SpreadsheetApp.getActive().getSheetByName('Impressions').getRange(3, 1, lastRow - 2,  6).getValues();
-  
-  var endDate = Utilities.formatDate(new Date(), "GMT", "yyyy-MM-dd");
-  var startDateRaw = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() - dateRange, new Date().getHours());
-  var startDate = Utilities.formatDate(startDateRaw, "GMT", "yyyy-MM-dd");
-  
   var tableFormatting = 'cellspacing="2" cellpadding="2" dir="ltr" border="1" style="width:100%;table-layout:fixed;font-size:10pt;font-family:arial,sans,sans-serif;border-collapse:collapse;border:1px solid #ccc;font-weight:normal;color:black;background-color:white;text-align:center;text-decoration:none;font-style:normal;'
   var htmltable = ['<table ' + tableFormatting +' ">'];
   
@@ -33,9 +33,22 @@ function sendEmailNotification(){
     subject: 'Optimizely Impressions Notification [' + endDate + ']',
     noReply: true,
     name: "Optimizely Impression Notifier", 
-    htmlBody: "Hello there, <br>Here's a list of experiments exceeding the set threshold (" + impressionThreshold + " impressions). <br>"
+    htmlBody: "Hello there, <br>Here's a list of experiments exceeding the set threshold of " + impressionThreshold + " impressions. <br>"
     + "Query Date Range: " + startDate + " to " + endDate + "<br><br>"
     + htmltable
+    + "<br>Best regards, <br>"
+    + "Your Impressions Notifier App"
+  });
+}
+
+function emailNothingToReport() {
+  MailApp.sendEmail({
+    to: emailAddress, 
+    subject: 'Optimizely Impressions Notification [' + endDate + ']',
+    noReply: true,
+    name: "Optimizely Impression Notifier", 
+    htmlBody: "Hello there, <br>No experiments exceeded the set threshold of " + impressionThreshold + " impressions. <br>"
+    + "Query Date Range: " + startDate + " to " + endDate + "<br>"
     + "<br>Best regards, <br>"
     + "Your Impressions Notifier App"
   });

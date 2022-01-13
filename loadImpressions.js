@@ -71,15 +71,17 @@ function listExperimentImpressions() {
   // Clear old experiment data & print new experiments above the selected threshold in the sheet
   if (experimentsAboveLimit.length > 0) {
     var lastRow = SpreadsheetApp.getActive().getSheetByName('Impressions').getLastRow();
-    var oldExperimentData = SpreadsheetApp.getActive().getSheetByName('Impressions').getRange(4, 1, lastRow - 3,  6);
-    oldExperimentData.clear({contentsOnly: true});
+    if (lastRow > 3) {
+      var oldExperimentData = SpreadsheetApp.getActive().getSheetByName('Impressions').getRange(4, 1, lastRow - 3,  6);
+      oldExperimentData.clear({contentsOnly: true});
+    }
     SpreadsheetApp.getActive().getSheetByName('Impressions')
       .getRange(4, 1, experimentsAboveLimit.length, experimentsAboveLimit[0].length)
       .setValues(experimentsAboveLimit);
 
     // Send notification email
     if (notificationsEnabled === 'Y') {
-      sendEmailNotification();
+      emailExperimentsAboveThreshold();
     }
   } else {
     var htmlModal = HtmlService.createHtmlOutput("No experiments above the threshold in the selected date range! <br>"
@@ -88,7 +90,10 @@ function listExperimentImpressions() {
     +'<button onclick="google.script.host.close()" style="background-color: #0037ff; border-color: #1a4bff; color: #fff; display: inline-block; vertical-align: middle; white-space: nowrap; font-family: Inter,sans-serif; cursor: pointer; line-height: 32px; border-width: 1px; border-style: solid; font-size: 13px; font-weight: 400; border-radius: 4px; height: 34px; padding: 0 15px; display: flex; margin: auto;">Close'
     +'</button></div></html>'
     );
-    SpreadsheetApp.getUi().showModalDialog(htmlModal, "Something's off");
+    SpreadsheetApp.getUi().showModalDialog(htmlModal, "Nothing to report!");
+    if (notificationsEnabled === 'Y') {
+      emailNothingToReport();
+    }
   }
 
   // Check last impressions usage update date vs. the current date

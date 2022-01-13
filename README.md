@@ -4,26 +4,25 @@ A connector between Optimizely and Google Spreadsheets through which you can mon
 
 ## Instructions for use
 
-1. Create a copy of the Spreadsheet template located [here](https://docs.google.com/spreadsheets/d/1g97TBPWWYl0kMm-UjTfvNqNnJjm7IS_S6Vm-dMDUuO0/edit?usp=sharing). In the copied document, head to the *Configuration* tab and enter the Optimizely **Account ID**.
-2. In the main navigation of the copied document, select *Extensions > Apps Script* to open the Apps Script in a new tab. Head to the (Apps Script) *Project Settings* and copy the **Script ID**.
-2. In Optimizely, head to *Account Settings > Registered Apps* and Register a new application.
-3. Select the application name & enter the redirect URI. The Redirect URI should be in the format of 'https://script.google.com/macros/d/SCRIPT_ID/usercallback' where you replace the 'SCRIPT_ID' with the value retrieved in Step 2.
-4. Set the Client Type as *Confidential*.
-5. Upon successful registration, the app will get assigned a **Client ID** and **Client Secret**. You will need these in the next steps to modify the provided Apps Script template.
-6. Back in the tab with the Apps Script, select the *Editor* tab and open the file called *oauth.gs*. In here, edit lines 31 & 32 inside the *getOptiService* function by providing the Client ID and Client Secret of the Optimizely App you've just created. Save you changes.
-6. Head back to the tab with the spreadsheet open and authenticate the application: *Optimizely Menu > Authorize*.
-7. Upon the successfull authentication, you should now see new options under the *Optimizely Menu* tab: 
-    1. **List Experiments** will list experiments that have consumed more impressions than is the threshold set in the *Configuration* tab (default is 1000).
+1. Create a copy of the Spreadsheet template located [here](https://docs.google.com/spreadsheets/d/1g97TBPWWYl0kMm-UjTfvNqNnJjm7IS_S6Vm-dMDUuO0/edit?usp=sharing).
+2. In Optimizely, head to *Account Settings > Registered Apps* and Register a new application. Enter the application name & the **Redirect URI**. You can find the Redirect URI in the *Configuration* tab in the cell B12. The URI should be in the following format 'https://script.google.com/macros/d/SCRIPT_ID/usercallback'. Set the **Client Type** as *Confidential*.
+3. Upon successful registration, the app will get assigned a **Client ID** and **Client Secret**. Copy these values into the corresponding fields on the *Configuration* tab of the spreadsheet (B9 & B10).
+4. Authenticate the application: *Optimizely Menu > Authorize*.
+5. Upon the successfull authentication, you should now see new options under the *Optimizely Menu* tab: 
+    1. **List Experiments** will list experiments that have consumed more impressions than is the threshold set in the *Configuration* tab. If the email notification is enabled (via the corresponding field in the *Configuration* tab) this function will also send the email notification.
     2. **Log Out** will break the connection between the Apps Script and the linked Optimizely Account in case you need to switch Optimizely accounts connected to your script.
-8. If desired, adjust the properties of the script via the *Configuration* tab (details in the following section).
-9. Set a script trigger to execute the script automatically as needed.
+6. Adjust the properties of the script via the *Configuration* tab (details for all fields in the following section).
+7. If desired, set a script trigger to execute the script automatically on a regular basis. This can be done under *Extensions > Apps Script > Triggers > Add Trigger*.
+    1. When setting up an automated trigger, select **listExperimentImpressions** as the function to run.
+    2. If you want the script to be executing daily and retrieve impression numbers that will include the previous day, the script should execute after 9:00 pm GMT.
 
 ## Editing values in the Configuration tab
 
 This tab is where you can customize the filters used by the script. Namely, you can modify the following properties:
 
-1. **Email** (optional): email address to which a notification will be sent, listing the experiments that consumed impressions above the set threshold.
-2. **Date Range:** Controls the number of days included in the query by updating the *startDate* of the request. The number entered here is used to deduct the number of days from the current date. I.e. the default value (2) will run a query ranging from the day before yesterday (today - 2 days) until today.
-    1. Note the job that generates the impression data runs once a day and generally is expected to finish by **9 pm GMT of the following day** (i.e. impressions numbers for 1/1/2022 will become available for queriying at 9pm GMT of 2/1/2022).
-3. **Impressions Threshold:** Set the threshold for including individual experiments in the report. This threshold is for the entire duration of the query.
-4. **Optimizely Account ID:** The account ID of your Optimizely account. You can find it under *Account Settings > Plan*.
+1. **Optimizely Account ID:** The account ID of your Optimizely account. You can find it under *Account Settings > Plan*. 
+2. **Impressions Threshold:** Set the threshold for including individual experiments in the report. This threshold is for the entire duration of the query.
+3. **Date Range:** Controls the number of days included in the query by updating the *startDate* of the request. The number entered here is used to deduct the number of days from the current date. I.e. the default value (2) will run a query ranging from the day before yesterday (today - 2 days) until today.
+    1. Note the job that generates the impression data runs once a day and generally is expected to finish by **9 pm GMT of the following day** (i.e. impressions numbers for 1/1/2022 will become available at 9pm GMT on 2/1/2022).
+4. **Send Notification Emails:** If you'd like to be receiving emails, set this to 'Y'.
+5. **Email:** Enter the email address where the automatic notificaton with experiments above the impression threshold should be sent. You can add multiple email addresses, separated by a comma.

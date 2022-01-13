@@ -13,6 +13,9 @@ function getMenu(ui) {
   }
 }
 
+// Retrieve the Apps Script ID
+function getScriptID(){ return ScriptApp.getScriptId() }
+
 function onOpen() {
   var ui = SpreadsheetApp.getUi();
   getMenu(ui);
