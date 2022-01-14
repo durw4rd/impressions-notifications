@@ -8,6 +8,10 @@ var endDate = Utilities.formatDate(new Date(), "GMT", "yyyy-MM-dd");
 var startDateRaw = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() - dateRange, new Date().getHours());
 var startDate = Utilities.formatDate(startDateRaw, "GMT", "yyyy-MM-dd");
 
+var spreadsheetURL = SpreadsheetApp.getActive().getUrl();
+var linkTemplate = HtmlService.createTemplate("<a href='<?= spreadsheetURL ?>'>connected Google Sheet</a>");
+var spreadheetLink = linkTemplate.evaluate();
+
 function emailExperimentsAboveThreshold(){
   // TODO: Handle missing email address
   // TODO: Add notification to the UI
@@ -36,7 +40,8 @@ function emailExperimentsAboveThreshold(){
     htmlBody: "Hello there, <br>Here's a list of experiments exceeding the set threshold of " + impressionThreshold + " impressions. <br>"
     + "Query Date Range: " + startDate + " to " + endDate + "<br><br>"
     + htmltable
-    + "<br>Best regards, <br>"
+    + "<br>See the " + spreadheetLink.getContent() + ".<br>"
+    + "<br>Be good, <br>"
     + "Your Impressions Notifier App"
   });
 }
@@ -49,7 +54,8 @@ function emailNothingToReport() {
     name: "Optimizely Impression Notifier", 
     htmlBody: "Hello there, <br>No experiments exceeded the set threshold of " + impressionThreshold + " impressions. <br>"
     + "Query Date Range: " + startDate + " to " + endDate + "<br>"
-    + "<br>Best regards, <br>"
+    + "<br>See the " + spreadheetLink.getContent() + ".<br>"
+    + "<br>Be good, <br>"
     + "Your Impressions Notifier App"
   });
 }

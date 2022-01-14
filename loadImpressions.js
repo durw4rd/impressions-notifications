@@ -84,6 +84,11 @@ function listExperimentImpressions() {
       emailExperimentsAboveThreshold();
     }
   } else {
+    var lastRow = SpreadsheetApp.getActive().getSheetByName('Impressions').getLastRow();
+    if (lastRow > 3) {
+      var oldExperimentData = SpreadsheetApp.getActive().getSheetByName('Impressions').getRange(4, 1, lastRow - 3,  6);
+      oldExperimentData.clear({contentsOnly: true});
+    }
     var htmlModal = HtmlService.createHtmlOutput("No experiments above the threshold in the selected date range! <br>"
     +'Impressions Threshold: ' + impressionThreshold + '<br>'
     +'Query Date Range: ' + startDate + ' to ' + endDate + '<br><br>'
