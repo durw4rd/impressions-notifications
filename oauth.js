@@ -7,7 +7,8 @@ function getMenu(ui) {
     .addToUi();
   } else {
     ui.createMenu('Optimizely Menu')
-    .addItem('List Experiments', 'listExperimentImpressions')
+    .addItem('List Experiments', 'printToSheet')
+    .addItem('Send Data via Email', 'sendEmail')
     .addItem('Log Out', 'logout')
     .addToUi();
   }
@@ -19,21 +20,19 @@ function getScriptID(){ return ScriptApp.getScriptId() }
 function onOpen() {
   var ui = SpreadsheetApp.getUi();
   getMenu(ui);
+
+  getScriptID();
 }
 
 // Using the following library: https://github.com/googleworkspace/apps-script-oauth2
 function getOptiService() {
-  var clientId = SpreadsheetApp.getActive().getSheetByName('Configuration').getRange("B9").getValue().toString();
-  var clientSecret = SpreadsheetApp.getActive().getSheetByName('Configuration').getRange("B10").getValue(); 
+  var clientId = SpreadsheetApp.getActive().getSheetByName('Configuration').getRange("B8").getValue().toString();
+  var clientSecret = SpreadsheetApp.getActive().getSheetByName('Configuration').getRange("B9").getValue(); 
 
   return OAuth2.createService('OptimizelyNotifier')
     .setAuthorizationBaseUrl('https://app.optimizely.com/oauth2/authorize')
     .setTokenUrl('https://app.optimizely.com/oauth2/token')
 
-    /*
-     * NEED TO CHANGE 
-     * Set the client ID and secret, from the Optimizely Account Settings Page.
-     */
     .setClientId(clientId)
     .setClientSecret(clientSecret)
 
